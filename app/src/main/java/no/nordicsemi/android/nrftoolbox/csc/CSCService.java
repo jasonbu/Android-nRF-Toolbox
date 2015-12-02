@@ -32,14 +32,13 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.NotificationCompat;
 
 import no.nordicsemi.android.log.Logger;
 import no.nordicsemi.android.nrftoolbox.FeaturesActivity;
 import no.nordicsemi.android.nrftoolbox.R;
+import no.nordicsemi.android.nrftoolbox.csc.settings.SettingsFragment;
 import no.nordicsemi.android.nrftoolbox.profile.BleManager;
 import no.nordicsemi.android.nrftoolbox.profile.BleProfileService;
-import no.nordicsemi.android.nrftoolbox.csc.settings.SettingsFragment;
 
 public class CSCService extends BleProfileService implements CSCManagerCallbacks {
 	private static final String TAG = "CSCService";
@@ -139,7 +138,7 @@ public class CSCService extends BleProfileService implements CSCManagerCallbacks
 			return;
 
 		if (mLastWheelRevolutions >= 0) {
-			float timeDifference;
+			float timeDifference = 0;
 			if (lastWheelEventTime < mLastWheelEventTime)
 				timeDifference = (65535 + lastWheelEventTime - mLastWheelEventTime) / 1024.0f; // [s]
 			else
@@ -168,7 +167,7 @@ public class CSCService extends BleProfileService implements CSCManagerCallbacks
 			return;
 
 		if (mLastCrankRevolutions >= 0) {
-			float timeDifference;
+			float timeDifference = 0;
 			if (lastCrankEventTime < mLastCrankEventTime)
 				timeDifference = (65535 + lastCrankEventTime - mLastCrankEventTime) / 1024.0f; // [s]
 			else
@@ -207,12 +206,11 @@ public class CSCService extends BleProfileService implements CSCManagerCallbacks
 
 		// both activities above have launchMode="singleTask" in the AndroidManifest.xml file, so if the task is already running, it will be resumed
 		final PendingIntent pendingIntent = PendingIntent.getActivities(this, OPEN_ACTIVITY_REQ, new Intent[] { parentIntent, targetIntent }, PendingIntent.FLAG_UPDATE_CURRENT);
-		final NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
-		builder.setContentIntent(pendingIntent);
+		final Notification.Builder builder = new Notification.Builder(this).setContentIntent(pendingIntent);
 		builder.setContentTitle(getString(R.string.app_name)).setContentText(getString(messageResId, getDeviceName()));
 		builder.setSmallIcon(R.drawable.ic_stat_notify_csc);
 		builder.setShowWhen(defaults != 0).setDefaults(defaults).setAutoCancel(true).setOngoing(true);
-		builder.addAction(new NotificationCompat.Action(R.drawable.ic_action_bluetooth, getString(R.string.csc_notification_action_disconnect), disconnectAction));
+		builder.addAction(R.drawable.ic_action_bluetooth, getString(R.string.csc_notification_action_disconnect), disconnectAction);
 
 		final Notification notification = builder.build();
 		final NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);

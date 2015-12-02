@@ -21,7 +21,6 @@
  */
 package no.nordicsemi.android.nrftoolbox.scanner;
 
-import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,11 +30,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 import no.nordicsemi.android.nrftoolbox.R;
-import no.nordicsemi.android.support.v18.scanner.ScanResult;
 
 /**
  * DeviceListAdapter class is list adapter for showing scanned Devices name, address and RSSI image based on RSSI values.
@@ -48,48 +44,56 @@ public class DeviceListAdapter extends BaseAdapter {
 	private final ArrayList<ExtendedBluetoothDevice> mListBondedValues = new ArrayList<>();
 	private final ArrayList<ExtendedBluetoothDevice> mListValues = new ArrayList<>();
 	private final Context mContext;
+	private final ExtendedBluetoothDevice.AddressComparator comparator = new ExtendedBluetoothDevice.AddressComparator();
 
 	public DeviceListAdapter(Context context) {
 		mContext = context;
 	}
 
-	/**
-	 * Sets a list of bonded devices.
-	 * @param devices list of bonded devices.
-	 */
-	public void addBondedDevices(final Set<BluetoothDevice> devices) {
-		final List<ExtendedBluetoothDevice> bondedDevices = mListBondedValues;
-		for (BluetoothDevice device : devices) {
-			bondedDevices.add(new ExtendedBluetoothDevice(device));
-		}
+	public void addBondedDevice(ExtendedBluetoothDevice device) {
+		mListBondedValues.add(device);
 		notifyDataSetChanged();
 	}
 
 	/**
-	 * Updates the list of not bonded devices.
-	 * @param results list of results from the scanner
+	 * Looks for the device with the same address as given one in the list of bonded devices. If the device has been found it updates its RSSI value.
+	 * 
+	 * @param address
+	 *            the device address
+	 * @param rssi
+	 *            the RSSI of the scanned device
 	 */
-	public void update(final List<ScanResult> results) {
-		for (final ScanResult result : results) {
-			final ExtendedBluetoothDevice device = findDevice(result);
-			if (device == null) {
-				mListValues.add(new ExtendedBluetoothDevice(result));
-			} else {
-				device.name = result.getScanRecord() != null ? result.getScanRecord().getDeviceName() : null;
-				device.rssi = result.getRssi();
-			}
+	public void updateRssiOfBondedDevice(String address, int rssi) {
+		comparator.address = address;
+		final int indexInBonded = mListBondedValues.indexOf(comparator);
+		if (indexInBonded >= 0) {
+			ExtendedBluetoothDevice previousDevice = mListBondedValues.get(indexInBonded);
+			previousDevice.rssi = rssi;
+			notifyDataSetChanged();
 		}
-		notifyDataSetChanged();
 	}
 
-	private ExtendedBluetoothDevice findDevice(final ScanResult result) {
-		for (final ExtendedBluetoothDevice device : mListBondedValues)
-			if (device.matches(result))
-				return device;
-		for (final ExtendedBluetoothDevice device : mListValues)
-			if (device.matches(result))
-				return device;
-		return null;
+	/**
+	 * If such device exists on the bonded device list, this method does nothing. If not then the device is updated (rssi value) or added.
+	 * 
+	 * @param device
+	 *            the device to be added or updated
+	 */
+	public void addOrUpdateDevice(ExtendedBluetoothDevice device) {
+		final boolean indexInBonded = mListBondedValues.contains(device);
+		if (indexInBonded) {
+			return;
+		}
+
+		final int indexInNotBonded = mListValues.indexOf(device);
+		if (indexInNotBonded >= 0) {
+			ExtendedBluetoothDevice previousDevice = mListValues.get(indexInNotBonded);
+			previousDevice.rssi = device.rssi;
+			notifyDataSetChanged();
+			return;
+		}
+		mListValues.add(device);
+		notifyDataSetChanged();
 	}
 
 	public void clearDevices() {
@@ -111,7 +115,7 @@ public class DeviceListAdapter extends BaseAdapter {
 		final int bondedCount = mListBondedValues.size() + 1; // 1 for the title
 		if (mListBondedValues.isEmpty()) {
 			if (position == 0)
-				return R.string.scanner_subtitle_not_bonded;
+				return R.string.scanner_subtitle__not_bonded;
 			else
 				return mListValues.get(position - 1);
 		} else {
@@ -120,7 +124,7 @@ public class DeviceListAdapter extends BaseAdapter {
 			if (position < bondedCount)
 				return mListBondedValues.get(position - 1);
 			if (position == bondedCount)
-				return R.string.scanner_subtitle_not_bonded;
+				return R.string.scanner_subtitle__not_bonded;
 			return mListValues.get(position - bondedCount - 1);
 		}
 	}
@@ -193,7 +197,7 @@ public class DeviceListAdapter extends BaseAdapter {
 			final String name = device.name;
 			holder.name.setText(name != null ? name : mContext.getString(R.string.not_available));
 			holder.address.setText(device.device.getAddress());
-			if (!device.isBonded || device.rssi != ExtendedBluetoothDevice.NO_RSSI) {
+			if (!device.isBonded || device.rssi != ScannerFragment.NO_RSSI) {
 				final int rssiPercent = (int) (100.0f * (127.0f + device.rssi) / (127.0f + 20.0f));
 				holder.rssi.setImageLevel(rssiPercent);
 				holder.rssi.setVisibility(View.VISIBLE);

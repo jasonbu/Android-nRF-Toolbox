@@ -69,16 +69,12 @@ public class SettingsFragment extends PreferenceFragment implements DfuSettingsC
 			final boolean disabled = !preferences.getBoolean(SETTINGS_PACKET_RECEIPT_NOTIFICATION_ENABLED, true);
 			if (disabled) {
 				new AlertDialog.Builder(getActivity()).setMessage(R.string.dfu_settings_dfu_number_of_packets_info).setTitle(R.string.dfu_settings_dfu_information)
-						.setPositiveButton(R.string.ok, null).show();
+						.setNeutralButton(R.string.ok, null).show();
 			}
 		} else if (SETTINGS_NUMBER_OF_PACKETS.equals(key)) {
 			updateNumberOfPacketsSummary();
 		} else if (SETTINGS_MBR_SIZE.equals(key)) {
 			updateMBRSize();
-		} else if (SETTINGS_ASSUME_DFU_NODE.equals(key) && sharedPreferences.getBoolean(key, false)) {
-			new AlertDialog.Builder(getActivity()).setMessage(R.string.dfu_settings_dfu_assume_dfu_mode_info).setTitle(R.string.dfu_settings_dfu_information)
-					.setPositiveButton(R.string.ok, null)
-					.show();
 		}
 	}
 
@@ -97,7 +93,7 @@ public class SettingsFragment extends PreferenceFragment implements DfuSettingsC
 		final int valueInt = Integer.parseInt(value);
 		if (valueInt > 200) {
 			new AlertDialog.Builder(getActivity()).setMessage(R.string.dfu_settings_dfu_number_of_packets_info).setTitle(R.string.dfu_settings_dfu_information)
-					.setPositiveButton(R.string.ok, null)
+					.setNeutralButton(R.string.ok, null)
 					.show();
 		}
 	}

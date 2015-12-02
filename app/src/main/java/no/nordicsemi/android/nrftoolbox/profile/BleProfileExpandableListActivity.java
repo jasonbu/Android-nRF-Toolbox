@@ -185,7 +185,7 @@ public abstract class BleProfileExpandableListActivity extends ExpandableListAct
 		if (isBLEEnabled()) {
 			if (!mDeviceConnected) {
 				setDefaultUI();
-				showDeviceScanningDialog(getFilterUUID());
+				showDeviceScanningDialog(getFilterUUID(), isDiscoverableRequired());
 			} else {
 				mBleManager.disconnect();
 			}
@@ -222,9 +222,8 @@ public abstract class BleProfileExpandableListActivity extends ExpandableListAct
 				mLogSession = LocalLogSession.newSession(getApplicationContext(), getLocalAuthorityLogger(), device.getAddress(), name);
 			}
 		}
-		mDeviceName = name;
 		mBleManager.setLogger(mLogSession);
-		mDeviceNameView.setText(name != null ? name : getString(R.string.not_available));
+		mDeviceNameView.setText(mDeviceName = name);
 		mConnectButton.setText(R.string.action_disconnect);
 		mBleManager.connect(device);
 	}
@@ -398,17 +397,27 @@ public abstract class BleProfileExpandableListActivity extends ExpandableListAct
 	protected abstract UUID getFilterUUID();
 
 	/**
+	 * Whether the scanner must search only for devices with GENERAL_DISCOVERABLE or LIMITER_DISCOVERABLE flag set.
+	 *
+	 * @return <code>true</code> if devices must have one of those flags set in their advertisement packets
+	 */
+	protected boolean isDiscoverableRequired() {
+		return true;
+	}
+
+	/**
 	 * Shows the scanner fragment.
 	 *
 	 * @param filter               the UUID filter used to filter out available devices. The fragment will always show all bonded devices as there is no information about their
 	 *                             services
+	 * @param discoverableRequired <code>true</code> if devices must have GENERAL_DISCOVERABLE or LIMITED_DISCOVERABLE flags set in their advertisement packet
 	 * @see #getFilterUUID()
 	 */
-	private void showDeviceScanningDialog(final UUID filter) {
+	private void showDeviceScanningDialog(final UUID filter, final boolean discoverableRequired) {
 		runOnUiThread(new Runnable() {
 			@Override
 			public void run() {
-				final ScannerFragment dialog = ScannerFragment.getInstance(filter);
+				final ScannerFragment dialog = ScannerFragment.getInstance(BleProfileExpandableListActivity.this, filter, discoverableRequired);
 				dialog.show(getSupportFragmentManager(), "scan_fragment");
 			}
 		});

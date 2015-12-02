@@ -37,9 +37,9 @@ import android.os.Handler;
 import java.util.Queue;
 import java.util.UUID;
 
+import no.nordicsemi.android.error.GattError;
 import no.nordicsemi.android.log.ILogSession;
 import no.nordicsemi.android.log.Logger;
-import no.nordicsemi.android.nrftoolbox.error.GattError;
 import no.nordicsemi.android.nrftoolbox.utility.DebugLogger;
 import no.nordicsemi.android.nrftoolbox.utility.ParserUtils;
 
@@ -52,7 +52,7 @@ import no.nordicsemi.android.nrftoolbox.utility.ParserUtils;
  * leaving this to the developers.</li>
  * <li>The manager tries to read the Battery Level characteristic. No matter the result of this operation (for example the Battery Level characteristic may not have the READ property)
  * it tries to enable Battery Level notifications, to get battery updates from the device.</li>
- * <li>Afterwards, the manager initializes the device using given queue of commands. See {@link BleManagerGattCallback#initGatt(BluetoothGatt)} method for more details.</li>
+ * <li>Afterwards, the manager initializes the device using given queue of commands. See {@link BleManagerGattCallback#initGatt(android.bluetooth.BluetoothGatt)} method for more details.</li>
  * <li>When initialization complete, the {@link BleManagerCallbacks#onDeviceReady()} callback is called.</li>
  * </ol>The manager also is responsible for parsing the Battery Level values and calling {@link BleManagerCallbacks#onBatteryValueReceived(int)} method.</p>
  * <p>Events from all profiles are being logged into the nRF Logger application,
@@ -830,7 +830,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 			final Queue<Request> requests = mInitQueue;
 
 			// Get the first request from the queue
-			final Request request = requests != null ? requests.poll() : null;
+			final Request request = requests.poll();
 
 			// Are we done?
 			if (request == null) {
@@ -862,6 +862,24 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 				}
 			}
 		}
+
+		/**
+		 * Converts the connection state to String value
+		 * @param state the connection state
+		 * @return state as String
+		 */
+		private String stateToString(final int state) {
+			switch (state) {
+				case BluetoothProfile.STATE_CONNECTED:
+					return "CONNECTED";
+				case BluetoothProfile.STATE_CONNECTING:
+					return "CONNECTING";
+				case BluetoothProfile.STATE_DISCONNECTING:
+					return "DISCONNECTING";
+				default:
+					return "DISCONNECTED";
+			}
+		}
 	}
 
 	private static final int PAIRING_VARIANT_PIN = 0;
@@ -872,7 +890,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 	private static final int PAIRING_VARIANT_DISPLAY_PIN = 5;
 	private static final int PAIRING_VARIANT_OOB_CONSENT = 6;
 
-	protected String pairingVariantToString(final int variant) {
+	private String pairingVariantToString(final int variant) {
 		switch (variant) {
 			case PAIRING_VARIANT_PIN:
 				return "PAIRING_VARIANT_PIN";
@@ -893,7 +911,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 		}
 	}
 
-	protected String bondStateToString(final int state) {
+	private String bondStateToString(final int state) {
 		switch (state) {
 			case BluetoothDevice.BOND_NONE:
 				return "BOND_NONE";
@@ -906,7 +924,7 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 		}
 	}
 
-	protected String getWriteType(final int type) {
+	private String getWriteType(final int type) {
 		switch (type) {
 			case BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT:
 				return "WRITE REQUEST";
@@ -916,24 +934,6 @@ public abstract class BleManager<E extends BleManagerCallbacks> {
 				return "WRITE SIGNED";
 			default:
 				return "UNKNOWN: " + type;
-		}
-	}
-
-	/**
-	 * Converts the connection state to String value
-	 * @param state the connection state
-	 * @return state as String
-	 */
-	protected String stateToString(final int state) {
-		switch (state) {
-			case BluetoothProfile.STATE_CONNECTED:
-				return "CONNECTED";
-			case BluetoothProfile.STATE_CONNECTING:
-				return "CONNECTING";
-			case BluetoothProfile.STATE_DISCONNECTING:
-				return "DISCONNECTING";
-			default:
-				return "DISCONNECTED";
 		}
 	}
 }

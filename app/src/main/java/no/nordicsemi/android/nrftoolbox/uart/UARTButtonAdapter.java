@@ -22,6 +22,9 @@
 
 package no.nordicsemi.android.nrftoolbox.uart;
 
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,15 +32,21 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 
 import no.nordicsemi.android.nrftoolbox.R;
-import no.nordicsemi.android.nrftoolbox.uart.domain.Command;
-import no.nordicsemi.android.nrftoolbox.uart.domain.UartConfiguration;
 
 public class UARTButtonAdapter extends BaseAdapter {
-	private UartConfiguration mConfiguration;
+	public final static String PREFS_BUTTON_ENABLED = "prefs_uart_enabled_";
+	public final static String PREFS_BUTTON_COMMAND = "prefs_uart_command_";
+	public final static String PREFS_BUTTON_ICON = "prefs_uart_icon_";
+
+	private final SharedPreferences mPreferences;
+	private final int[] mIcons;
+	private final boolean[] mEnableFlags;
 	private boolean mEditMode;
 
-	public UARTButtonAdapter(final UartConfiguration configuration) {
-		mConfiguration = configuration;
+	public UARTButtonAdapter(final Context context) {
+		mPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+		mIcons = new int[9];
+		mEnableFlags = new boolean[9];
 	}
 
 	public void setEditMode(final boolean editMode) {
@@ -45,19 +54,24 @@ public class UARTButtonAdapter extends BaseAdapter {
 		notifyDataSetChanged();
 	}
 
-	public void setConfiguration(final UartConfiguration configuration) {
-		mConfiguration = configuration;
-		notifyDataSetChanged();
+	@Override
+	public void notifyDataSetChanged() {
+		final SharedPreferences preferences = mPreferences;
+		for (int i = 0; i < mIcons.length; ++i) {
+			mIcons[i] = preferences.getInt(PREFS_BUTTON_ICON + i, -1);
+			mEnableFlags[i] = preferences.getBoolean(PREFS_BUTTON_ENABLED + i, false);
+		}
+		super.notifyDataSetChanged();
 	}
 
 	@Override
 	public int getCount() {
-		return mConfiguration != null ? mConfiguration.getCommands().length : 0;
+		return mIcons.length;
 	}
 
 	@Override
 	public Object getItem(final int position) {
-		return mConfiguration.getCommands()[position];
+		return mIcons[position];
 	}
 
 	@Override
@@ -77,8 +91,7 @@ public class UARTButtonAdapter extends BaseAdapter {
 
 	@Override
 	public boolean isEnabled(int position) {
-		final Command command = (Command) getItem(position);
-		return mEditMode || (command != null && command.isActive());
+		return mEditMode || mEnableFlags[position];
 	}
 
 	@Override
@@ -92,11 +105,9 @@ public class UARTButtonAdapter extends BaseAdapter {
 		view.setActivated(mEditMode);
 
 		// Update image
-		final Command command = (Command) getItem(position);
 		final ImageView image = (ImageView) view;
-		final boolean active = command != null && command.isActive();
-		if (active) {
-			final int icon = command.getIconIndex();
+		final int icon = mIcons[position];
+		if (mEnableFlags[position] && icon != -1) {
 			image.setImageResource(R.drawable.uart_button);
 			image.setImageLevel(icon);
 		} else
